@@ -4,19 +4,26 @@ This is my lightning talk about performance considerations for
 Angular apps displaying lots of data.
 
 It starts with a simplified explanation of `$digest` and then gives a few
-examples of how to apply this knowledge.
+examples of how to apply this knowledge to cases when you're repeating over
+a bunch of elements.
 
 
 ## Measure things
 
-Seriously you probably want to measure to make sure you know what's slow.
+Make sure you know what's slow.
+Lots of tools that can help.
+
+* [Chrome devtools](https://developers.google.com/chrome-developer-tools/docs/timeline)
+* [Firefox profiler](https://developer.mozilla.org/en-US/docs/Performance/Profiling_with_the_Built-in_Profiler)
+
+I'm not going to talk about them.
 
 
 ## What factors are important?
 
-### DOM manipulation
+What causes slowness?
 
-Why?
+### DOM manipulation
 
 * Causes [reflows][]
 * Lots of strategies [DOM manipulation][]
@@ -27,27 +34,31 @@ In some cases you can write your own directive to
 ### dynamic things
 
 The number of "dynamic things" your user sees.
-This is actually called `$watch`.
+This is called the number of `$watch`s.
 
 
 ## Counting Dynamic Things
+
+What adds a `$watch`?
 
 Consider the following chunk of an app:
 
 ```html
 <div>
   <p>{{thing}}</p>
+  <p>{{getThing()}}</p>
 
   <div ng-repeat="item in items">{{item.name}}</div>
 </div>
 ```
 
-Here's a list of the things Angular thinks might update:
+Here's a list of the things Angular `$watch`s for updates:
 
 ```javascript
 // angular figures this out based on directives, which add `$watch`s
 var thingsThatMightUpdate = [
   $scope.thing,
+  $scope.getThing(), // invoke this each time
 
   // from ngRepeat
   $scope.items.length,
@@ -64,13 +75,11 @@ var thingsThatMightUpdate = [
 ];
 ```
 
-*(This is all psuedocode btw)*
-
 
 ## Digest cycle
 
-This is a simplification.
-[The docs on scopes have the full story](http://docs.angularjs.org/guide/scope).
+This is a simplification (cuz lightning talk).
+[The documentation on scopes](http://docs.angularjs.org/guide/scope) have the full story.
 
 ```javascript
 // map thingName to value
@@ -98,12 +107,75 @@ function digest () {
 }
 ```
 
-tl;dr – watch fewer things
+Note that we have to eval `$scope.getThing()` on each digest.
+If `getThing()` is slow, then all your digests are slow.
+
+If you have a bunch of things in the array, the digest will be slow.
+
+tl;dr – watch fewer things, keep `$watch`s fast.
 
 
-## Make it faster
+## How to reduce expensive watches
 
-Here's a few strats.
+$$$$$$$$$$$$$$$$$$$$$
+
+### Transform the data before binding
+
+Rather than use filters/functions in your bindings,
+transform the data before binding to it.
+
+#### Before
+
+Controller:
+```javascript
+angular.module('mySlowApp', []).controller('MyController', [
+  '$scope', '$http', function ($scope, $http) {
+
+    // this has like a million elts
+    $http.get('all-the-things.json').success(function (data) {
+      $scope.data = data;
+    });
+
+    $scope.transform = function (item) {
+      // do something expensive
+      return item;
+    };
+  }]);
+```
+
+HTML:
+```html
+<div ng-repeat="item in data">{{transform(item.name)}}</div>
+```
+
+#### After
+
+Controller:
+```javascript
+angular.module('myFastApp', []).controller('MyController', [
+  '$scope', '$http', function ($scope, $http) {
+
+    // this has like a million elts
+    $http.get('all-the-things.json').success(function (data) {
+      $scope.data = data.map(transform);
+    });
+
+    function transform (item) {
+      // do something expensive
+      return item;
+    };
+  }]);
+```
+
+HTML:
+```html
+<div ng-repeat="item in data">{{item.name}}</div>
+```
+
+
+## How to watch fewer things
+
+Here are a few strategies.
 
 ### Paginate
 
@@ -139,12 +211,17 @@ Template:
 You can use a similar strategy but with [infinite][infinite scrolling]/[virtual][virtual scrolling]
 scrolling.
 
-
 ### You know the data is populated once
 
-* [bind-once (coming to 1.3 soon)](https://github.com/angular/angular.js/issues/5408)
+~Coming to 1.3 Soon~
 
-[this article](http://blog.scalyr.com/2013/10/31/angularjs-1200ms-to-35ms/)
+* [bind once (GH #5408)](https://github.com/angular/angular.js/issues/5408)
+
+~3rd Party Modules~
+
+* [angular-once](https://github.com/Pasvaz/bindonce)
+* [bindonce](https://github.com/Pasvaz/bindonce)
+* [this article](http://blog.scalyr.com/2013/10/31/angularjs-1200ms-to-35ms/)
 
 ### You know the data is populated occasionally
 
@@ -164,7 +241,6 @@ angular.module('myApp', []).controller('MyController', [
 
 In your directive:
 ```javascript
-//
 {
   link: function (scope, elt) {
     scope.$on('dataUpdated', function (ev, data) {
