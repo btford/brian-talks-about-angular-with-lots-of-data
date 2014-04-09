@@ -148,11 +148,6 @@ Angular makes the 95% case fast, but gives you the tools to take control of your
 destiny when you want to.
 
 
-## Credits
-
-data via [data.sfgov.org][]
-
-
 ## License
 MIT
 
