@@ -29,7 +29,8 @@ What causes slowness?
 * Lots of strategies [DOM manipulation][]
 
 Angular is pretty good at helping you with this.
-In some cases you can write your own directive to
+In some special cases you can write your own directive
+to manipulate the DOM and improve performance.
 
 ### dynamic things
 
