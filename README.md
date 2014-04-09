@@ -14,11 +14,20 @@ Seriously you probably want to measure to make sure you know what's slow.
 
 ## What factors are important?
 
-* [DOM manipulation][] (causes [reflows][], etc)
-* The number of "dynamic things" your user sees.
+### DOM manipulation
 
-Angular is pretty good at helping you at the first thing.
-In some cases you can write your own directive
+Why?
+
+* Causes [reflows][]
+* Lots of strategies [DOM manipulation][]
+
+Angular is pretty good at helping you with this.
+In some cases you can write your own directive to
+
+### dynamic things
+
+The number of "dynamic things" your user sees.
+This is actually called `$watch`.
 
 
 ## Counting Dynamic Things
@@ -27,7 +36,7 @@ Consider the following chunk of an app:
 
 ```html
 <div>
-  {{thing}}
+  <p>{{thing}}</p>
 
   <div ng-repeat="item in items">{{item.name}}</div>
 </div>
@@ -98,6 +107,10 @@ Here's a few strats.
 
 ### Paginate
 
+ngRepeat over a subset of the things.
+
+Controller:
+
 ```javascript
 angular.module('myApp', []).controller('MyController', [
   '$scope', function ($scope) {
@@ -114,6 +127,18 @@ angular.module('myApp', []).controller('MyController', [
   }]);
 ```
 
+Template:
+```html
+<div>
+  <div ng-repeat="item in littleArray">{{item.name}}</div>
+  <button ng-click="prev -= 1">prev</button>
+  <button ng-click="page += 1">next</button>
+</div>
+```
+
+You can use a similar strategy but with [infinite][infinite scrolling]/[virtual][virtual scrolling]
+scrolling.
+
 
 ### You know the data is populated once
 
@@ -123,10 +148,18 @@ angular.module('myApp', []).controller('MyController', [
 
 ### You know the data is populated occasionally
 
-Use event listeners.
+Opt out of data binding; use event listeners.
 
+In your controller:
 ```javascript
-lol
+angular.module('myApp', []).controller('MyController', [
+  '$scope', '$interval', '$http', function ($scope, $interval, $http) {
+
+    // this has like a million elts
+    $http.get('all-the-things.json').success(function (data) {
+      $scope.$broadcast('dataUpdated', data);
+    });
+  }]);
 ```
 
 In your directive:
@@ -155,3 +188,5 @@ MIT
 [reflows]: https://developers.google.com/speed/articles/reflow
 [DOM manipulation]: https://developers.google.com/speed/articles/javascript-dom
 [data.sfgov.org]: https://data.sfgov.org/Arts-Culture-and-Recreation-/Film-Locations-in-San-Francisco/yitu-d5am
+[virtual scrolling]: https://github.com/stackfull/angular-virtual-scroll
+[infinite scrolling]: http://binarymuse.github.io/ngInfiniteScroll/
