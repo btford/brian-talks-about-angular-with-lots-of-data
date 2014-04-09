@@ -233,10 +233,14 @@ In your controller:
 angular.module('myApp', []).controller('MyController', [
   '$scope', '$interval', '$http', function ($scope, $interval, $http) {
 
-    // this has like a million elts
-    $http.get('all-the-things.json').success(function (data) {
-      $scope.$broadcast('dataUpdated', data);
-    });
+    // refresh every 10 seconds
+    $interval(function () {
+      // this has like a million elts
+      $http.get('all-the-things.json').success(function (data) {
+        $scope.$broadcast('dataUpdated', data);
+      });
+    }, 10000);
+
   }]);
 ```
 
