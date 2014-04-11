@@ -220,7 +220,7 @@ scrolling.
 
 ~3rd Party Modules~
 
-* [angular-once](https://github.com/Pasvaz/bindonce)
+* [angular-once](https://github.com/tadeuszwojcik/angular-once)
 * [bindonce](https://github.com/Pasvaz/bindonce)
 * [this article](http://blog.scalyr.com/2013/10/31/angularjs-1200ms-to-35ms/)
 
