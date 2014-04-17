@@ -204,7 +204,7 @@ Template:
 ```html
 <div>
   <div ng-repeat="item in littleArray">{{item.name}}</div>
-  <button ng-click="prev -= 1">prev</button>
+  <button ng-click="page -= 1">prev</button>
   <button ng-click="page += 1">next</button>
 </div>
 ```
